@@ -1,25 +1,59 @@
-jest.mock(`goober`)
 
-import React from "react"
-import goober from "goober"
+import React from "react";
+import { setPragma, extractCss } from "goober";
 import { onRenderBody } from "../gatsby-ssr"
 
-describe(`gatsby-plugin-goober`, () => {
-  describe(`onRenderBody`, () => {
-    it(`sets the correct head components`, () => {
-      goober.extractCSS = jest.fn(() => `goober-css`)
-      const setHeadComponents = jest.fn()
+jest.mock("goober", () => ({
+  extractCss: jest.fn().mockReturnValue("goober-css"),
+  setPragma: jest.fn()
+}));
 
-      onRenderBody({ setHeadComponents })
+describe(`gatsby-plugin-goober`, () => {
+
+  it("should call setPragma", () => {
+    expect(setPragma).toHaveBeenCalledWith(React.createElement);
+  })
+
+  describe(`onRenderBody`, () => {
+
+    beforeEach(() => {
+      extractCss.mockClear();
+    });
+
+    it(`sets the correct head components`, () => {
+      const setHeadComponents = jest.fn();
+      const pathname = "/";
+
+      onRenderBody({ setHeadComponents, pathname });
+
+      expect(extractCss).toBeCalled();
 
       expect(setHeadComponents).toHaveBeenCalledTimes(1)
       expect(setHeadComponents).toHaveBeenCalledWith([
         <style
-          id="goober-ids"
-          key="goober-ids"
-          dangerouslySetInnerHTML={{ __html: `goober-css` }}
-        />,
-      ])
+          data-goober={true}
+          key="data-goober"
+          dangerouslySetInnerHTML={{ __html: 'goober-css' }}
+        />
+      ]);
+    });
+
+    it(`cached`, () => {
+      const setHeadComponents = jest.fn();
+      const pathname = "/";
+
+      onRenderBody({ setHeadComponents, pathname });
+
+      expect(extractCss).not.toBeCalled();
+
+      expect(setHeadComponents).toHaveBeenCalledTimes(1)
+      expect(setHeadComponents).toHaveBeenCalledWith([
+        <style
+          data-goober={true}
+          key="data-goober"
+          dangerouslySetInnerHTML={{ __html: 'goober-css' }}
+        />
+      ]);
     })
   })
 })
